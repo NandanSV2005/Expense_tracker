@@ -1,0 +1,65 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+}
+
+.navbar {
+    border-bottom: 3px solid #0d6efd;
+}
+
+.card {
+    border: none;
+    border-radius: 10px;
+}
+
+.table th {
+    font-weight: 600;
+    color: #495057;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.btn-primary {
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.form-control, .form-select {
+    border-radius: 6px;
+}
+
+.form-control:focus, .form-select:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+}
+
+.modal-content {
+    border-radius: 12px;
+}
+
+.badge-category {
+    background-color: #e9ecef;
+    color: #495057;
+    padding: 0.4em 0.8em;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
+/* User-specific badges */
+.badge-Nandan {
+    background-color: #cce5ff;
+    color: #004085;
+}
+.badge-Vandhana {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+.badge-Vinod {
+    background-color: #d4edda;
+    color: #155724;
+}

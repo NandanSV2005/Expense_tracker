@@ -1,0 +1,18 @@
+# SQLite database (auto-created on first run, do NOT commit)
+expense_tracker.db
+
+# Python compilation files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
