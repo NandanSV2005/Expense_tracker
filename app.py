@@ -7,13 +7,28 @@ app = Flask(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# On Render, use the persistent disk mount path set via RENDER_DATA_DIR env var.
-# Locally, store the DB in the project folder.
-# NOTE: Do NOT call makedirs on the Render path — Render mounts it automatically.
-DATA_DIR = os.environ.get('RENDER_DATA_DIR', BASE_DIR)
-if DATA_DIR == BASE_DIR:
-    os.makedirs(DATA_DIR, exist_ok=True)
+def _resolve_data_dir():
+    """
+    Try to use RENDER_DATA_DIR (persistent disk on Render paid plan).
+    If it doesn't exist or isn't writable, fall back to the project directory.
+    On Render free plan, /var/data is never mounted so we always fall back.
+    """
+    candidate = os.environ.get('RENDER_DATA_DIR', BASE_DIR)
+    try:
+        os.makedirs(candidate, exist_ok=True)
+        # Quick write test to confirm the directory is actually usable
+        test_path = os.path.join(candidate, '.write_test')
+        with open(test_path, 'w') as f:
+            f.write('ok')
+        os.remove(test_path)
+        return candidate
+    except (PermissionError, OSError):
+        # Fall back to project directory — always writable on Render
+        return BASE_DIR
+
+DATA_DIR = _resolve_data_dir()
 DB_PATH = os.path.join(DATA_DIR, 'expense_tracker.db')
+
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
