@@ -6,7 +6,12 @@ from flask import Flask, request, jsonify, render_template, Response
 app = Flask(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, 'expense_tracker.db')
+
+# On Render, use the persistent disk mount path (/var/data).
+# Locally, store the DB in the project folder.
+DATA_DIR = os.environ.get('RENDER_DATA_DIR', BASE_DIR)
+os.makedirs(DATA_DIR, exist_ok=True)
+DB_PATH = os.path.join(DATA_DIR, 'expense_tracker.db')
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -247,4 +252,5 @@ def export_csv():
     )
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(debug=False, host='0.0.0.0', port=port)
