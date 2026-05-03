@@ -24,7 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const categoryViewTitle = document.getElementById('categoryViewTitle');
     const categoryViewTotal = document.getElementById('categoryViewTotal');
     const categoryExpenseTableBody = document.getElementById('categoryExpenseTableBody');
+    const editExpenseModal = new bootstrap.Modal(document.getElementById('editExpenseModal'));
+    const editExpenseForm = document.getElementById('editExpenseForm');
     let selectedCategoryId = null;
+    let allExpenses = []; // Local cache to help with editing
 
     // State
     let categories = [];
@@ -71,6 +74,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 filterHtml += `<option value="${cat.id}">${cat.name}</option>`;
             });
             filterCategory.innerHTML = filterHtml;
+
+            // Populate Edit Expense Dropdown
+            let editOptionsHtml = '<option value="" disabled>Select a category...</option>';
+            categories.forEach(cat => {
+                editOptionsHtml += `<option value="${cat.id}">${cat.name}</option>`;
+            });
+            document.getElementById('editCategory').innerHTML = editOptionsHtml;
             
             // Populate Category Pills for Categories View
             let pillsHtml = '';
@@ -220,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let html = '';
                 expenses.forEach(exp => {
                     let userBadgeClass = `badge badge-category badge-${exp.added_by}`;
-                    const dateObj = new Date(exp.expense_date);
+                    const dateObj = new Date(exp.expense_date + 'T00:00:00');
                     const dateStr = dateObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
                     html += `
@@ -229,6 +239,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             <td class="fw-bold">₹${formatMoney(exp.amount)}</td>
                             <td><span class="${userBadgeClass} px-2 py-1 rounded">${exp.added_by}</span></td>
                             <td class="text-muted">${exp.description || '-'}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-warning" onclick="openEditModal(${exp.id})"><i class="fa-solid fa-pen"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteExpense(${exp.id})"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                            </td>
                         </tr>
                     `;
                 });
@@ -281,6 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch(`/api/expenses?${params.toString()}`);
             if (res.ok) {
                 const expenses = await res.json();
+                allExpenses = expenses; // Store in cache for easy editing
                 renderExpenses(expenses);
             }
         } catch (err) {
@@ -317,12 +334,85 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td><span class="badge-category">${exp.category_name}</span></td>
                     <td><span class="${userBadgeClass} px-2 py-1 rounded">${exp.added_by}</span></td>
                     <td class="text-muted">${exp.description || '-'}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-warning" onclick="openEditModal(${exp.id})"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteExpense(${exp.id})"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </td>
                 </tr>
             `;
         });
         
         expenseTableBody.innerHTML = html;
     }
+
+    // Global Edit/Delete handlers
+    window.openEditModal = function(id) {
+        const exp = allExpenses.find(e => e.id === id);
+        if (!exp) return;
+
+        document.getElementById('editExpenseId').value = exp.id;
+        document.getElementById('editAmount').value = exp.amount;
+        document.getElementById('editDescription').value = exp.description || '';
+        document.getElementById('editCategory').value = exp.category_id;
+        document.getElementById('editAddedBy').value = exp.added_by;
+
+        editExpenseModal.show();
+    };
+
+    window.deleteExpense = async function(id) {
+        if (!confirm('Are you sure you want to delete this expense?')) return;
+
+        try {
+            const res = await fetch(`/api/expenses/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                loadExpenses(true);
+                loadSummary();
+                if (selectedCategoryId) {
+                    loadCategoryExpenses(selectedCategoryId, categoryViewTitle.textContent, false);
+                }
+            } else {
+                alert('Failed to delete expense.');
+            }
+        } catch (err) {
+            console.error('Error deleting expense:', err);
+        }
+    };
+
+    // Update Expense
+    editExpenseForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('editExpenseId').value;
+        const expenseData = {
+            amount: document.getElementById('editAmount').value,
+            description: document.getElementById('editDescription').value,
+            category_id: document.getElementById('editCategory').value,
+            added_by: document.getElementById('editAddedBy').value
+        };
+
+        try {
+            const res = await fetch(`/api/expenses/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(expenseData)
+            });
+
+            if (res.ok) {
+                editExpenseModal.hide();
+                loadExpenses(true);
+                loadSummary();
+                if (selectedCategoryId) {
+                    loadCategoryExpenses(selectedCategoryId, categoryViewTitle.textContent, false);
+                }
+            } else {
+                const data = await res.json();
+                alert('Error: ' + data.error);
+            }
+        } catch (err) {
+            console.error('Error updating expense:', err);
+        }
+    });
 
     // Handle Filters
     filterForm.addEventListener('submit', (e) => {

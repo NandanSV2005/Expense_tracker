@@ -200,6 +200,44 @@ def add_expense():
         conn.close()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/expenses/<int:expense_id>', methods=['PUT'])
+def update_expense(expense_id):
+    data = request.json
+    amount = data.get('amount')
+    description = data.get('description', '')
+    category_id = data.get('category_id')
+    added_by = data.get('added_by')
+    
+    if not all([amount, category_id, added_by]):
+        return jsonify({'error': 'Amount, category, and added_by are required'}), 400
+        
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "UPDATE expenses SET amount = ?, description = ?, category_id = ?, added_by = ? WHERE id = ?",
+            (amount, description, category_id, added_by, expense_id)
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({'message': 'Expense updated successfully'}), 200
+    except sqlite3.Error as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/expenses/<int:expense_id>', methods=['DELETE'])
+def delete_expense(expense_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM expenses WHERE id = ?", (expense_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({'message': 'Expense deleted successfully'}), 200
+    except sqlite3.Error as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/summary', methods=['GET'])
 def get_summary():
     conn = get_db_connection()
